@@ -1,58 +1,63 @@
 package main
 
 import (
+	"awesomeProject1/domain"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/log"
-	"math/rand"
 	"net/http"
 )
 
-type ClusterManager struct {
-	//集群名称
-	Namespace          string
-	ProcessCounterDesc *prometheus.Desc
+const (
+	domain1 = "www.baidu2.com"
+	domain2 = "www.17173.com"
+)
+
+// DomainCollector  采集器
+type DomainCollector struct {
+	Namespace       string
+	DomainCollector *prometheus.Desc
+	Domain          map[string]string
 }
 
 // Describe 指标描述
-func (c *ClusterManager) Describe(ch chan<- *prometheus.Desc) {
-	ch <- c.ProcessCounterDesc
+func (c *DomainCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- c.DomainCollector
 }
 
 // Collect 指标信息
-func (c *ClusterManager) Collect(ch chan<- prometheus.Metric) {
-	SystemProcessBycount := c.SystemState()
-	for k, processCount := range SystemProcessBycount {
+func (c *DomainCollector) Collect(ch chan<- prometheus.Metric) {
+	ExpiredTime := c.DomainDeadline()
+	for k, processCount := range ExpiredTime {
 		ch <- prometheus.MustNewConstMetric(
-			c.ProcessCounterDesc,
+			c.DomainCollector,
 			prometheus.GaugeValue,
-			processCount,
-			k,
+			float64(processCount),
 			k,
 		)
 	}
 }
 
-// SystemState 采集方法
-func (c *ClusterManager) SystemState() (processCountByHost map[string]float64) {
-	processCountByHost = map[string]float64{
-		"193": float64(rand.Int31n(1000)),
-		"194": float64(rand.Int31n(1000)),
+// DomainDeadline 采集方法
+func (c *DomainCollector) DomainDeadline() (processCountByHost map[string]int) {
+
+	processCountByHost = map[string]int{
+		"www": domain.GetDomainExpired(),
 	}
 	return processCountByHost
 }
 
 // NewClusterManager 创建采集器struct
-func NewClusterManager(namespace string) *ClusterManager {
-	return &ClusterManager{
+func NewClusterManager(namespace string) *DomainCollector {
+	return &DomainCollector{
 		Namespace: namespace,
-		ProcessCounterDesc: prometheus.NewDesc(
-			"clustermanager_process_total",
-			"Number of restart process",
-			[]string{"host", "ip"},
+		DomainCollector: prometheus.NewDesc(
+			"domain_deadline_hours",
+			" Domain name expired time",
+			[]string{"host"},
 			prometheus.Labels{
 				"namespace": namespace,
-				"domain":    "www.baidu.com",
+				"domain1":   domain1,
 			}),
 	}
 }
