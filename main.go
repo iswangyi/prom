@@ -10,7 +10,7 @@ import (
 
 const (
 	domain1 = "www.baidu2.com"
-	domain2 = "www.17173.com"
+	//domain2 = "www.17173.com"
 )
 
 // DomainCollector  采集器
@@ -32,16 +32,16 @@ func (c *DomainCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(
 			c.DomainCollector,
 			prometheus.GaugeValue,
-			float64(processCount),
+			processCount,
 			k,
 		)
 	}
 }
 
 // DomainDeadline 采集方法
-func (c *DomainCollector) DomainDeadline() (processCountByHost map[string]int) {
+func (c *DomainCollector) DomainDeadline() (processCountByHost map[string]float64) {
 
-	processCountByHost = map[string]int{
+	processCountByHost = map[string]float64{
 		"www": domain.GetDomainExpired(),
 	}
 	return processCountByHost
@@ -79,5 +79,5 @@ func main() {
 		h.ServeHTTP(w, r)
 	})
 	//http.Handle("/metrics", promhttp.Handler())
-	log.Fatal(http.ListenAndServe(":8081", nil))
+	log.Fatal(http.ListenAndServe(":8082", nil))
 }
