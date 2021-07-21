@@ -6,11 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/log"
 	"net/http"
-)
-
-const (
-	domain1 = "www.baidu2.com"
-	//domain2 = "www.17173.com"
+	"sync"
 )
 
 // DomainCollector  采集器
@@ -34,17 +30,29 @@ func (c *DomainCollector) Collect(ch chan<- prometheus.Metric) {
 			prometheus.GaugeValue,
 			processCount,
 			k,
+			k,
 		)
 	}
 }
 
 // DomainDeadline 采集方法
-func (c *DomainCollector) DomainDeadline() (processCountByHost map[string]float64) {
-
-	processCountByHost = map[string]float64{
-		"www": domain.GetDomainExpired(),
+func (c *DomainCollector) DomainDeadline() (DomainExpired map[string]float64) {
+	//域名列表
+	DomainList := map[string]string{
+		"kledu":   "baidu.com",
+		"kllive":  "17173.com",
+		"kllive2": "cctv.com"}
+	DomainExpired = make(map[string]float64)
+	mutex := sync.Mutex{}
+	for project, domainName := range DomainList {
+		go func(p string, d string) {
+			mutex.Lock()
+			DomainExpired[p] = domain.GetDomainExpired(d)
+			mutex.Unlock()
+		}(project, domainName)
 	}
-	return processCountByHost
+
+	return DomainExpired
 }
 
 // NewClusterManager 创建采集器struct
@@ -52,18 +60,17 @@ func NewClusterManager(namespace string) *DomainCollector {
 	return &DomainCollector{
 		Namespace: namespace,
 		DomainCollector: prometheus.NewDesc(
-			"domain_deadline_hours",
+			"domain_deadline_day",
 			" Domain name expired time",
-			[]string{"host"},
+			[]string{"host", "project"},
 			prometheus.Labels{
 				"namespace": namespace,
-				"domain1":   domain1,
 			}),
 	}
 }
 
 func main() {
-	workerA := NewClusterManager("test")
+	workerA := NewClusterManager("pro")
 	//定期检查收集指标的合法性
 	reg := prometheus.NewPedanticRegistry()
 	//collector注册
