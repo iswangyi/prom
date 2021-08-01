@@ -98,6 +98,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"prom/domain"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -122,28 +123,47 @@ var (
 			Help:      "RPC latency distributions.",
 			Namespace: "test",
 		},
-		[]string{"service"},
+		[]string{"service", "host"},
 	)
+	ex = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name:      "cpu",
+			Help:      "cpuhelp",
+			Namespace: "test",
+		},
+		[]string{"ip"},
+	)
+
 	// The same as above, but now as a histogram, and only for the normal
 	// distribution. The buckets are targeted to the parameters of the
 	// normal distribution, with 20 buckets centered on the mean, each
 	// half-sigma wide.
 )
 
+func f22() float64 {
+	return 1.33
+}
+
 func init() {
 	// Register the summary and the histogram with Prometheus's default registry.
-	prometheus.MustRegister(expired)
+	prometheus.MustRegister(expired, ex)
 }
 
 func main() {
 	flag.Parse()
 
-	// Periodically record some sample latencies for the three services.
+	f := domain.GetDomainExpired("baidu.com")
+	f2 := f22()
 
 	go func() {
 		for {
-			expired.WithLabelValues("day").Inc()
+			expired.WithLabelValues("day", "kkk").Set(f)
+			expired.WithLabelValues("time", "black").Set(f2)
+
 		}
+	}()
+	go func() {
+		ex.WithLabelValues("tttt").Add(123)
 	}()
 
 	// Expose the registered metrics via HTTP.
