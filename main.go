@@ -98,6 +98,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"prom/alertinfo"
 	"prom/domain"
 	"time"
 
@@ -106,7 +107,7 @@ import (
 )
 
 var (
-	addr              = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
+	addr              = flag.String("listen-address", ":9999", "The address to listen on for HTTP requests.")
 	uniformDomain     = flag.Float64("uniform.domain", 0.0002, "The domain for the uniform distribution.")
 	normDomain        = flag.Float64("normal.domain", 0.0002, "The domain for the normal distribution.")
 	normMean          = flag.Float64("normal.mean", 0.00001, "The mean for the normal distribution.")
@@ -165,6 +166,8 @@ func main() {
 	go func() {
 		ex.WithLabelValues("tttt").Add(123)
 	}()
+
+	alertinfo.GetAlertLabel()
 
 	// Expose the registered metrics via HTTP.
 	http.Handle("/metrics", promhttp.HandlerFor(
